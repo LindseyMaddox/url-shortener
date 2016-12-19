@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 const bodyParser= require('body-parser');
+var async = require("async");
 app.use(bodyParser.urlencoded({extended: true}));
 const MongoClient = require('mongodb').MongoClient;
 
@@ -17,19 +18,24 @@ MongoClient.connect(mongoUrl, (err, db) => {
     console.log('listening on' + port);
   });
   
+   app.get('', function(req,res){
+     res.render('index.ejs');
+});
+ 
  app.get('/', function(req,res){
      res.render('index.ejs');
 });
 
   app.get('/:shortened', function(req,res){
      var shortHash = req.params.shortened;
-     var longURL =  findURLbyShortHash(shortHash,longURL);
+     console.log("short hash is " + shortHash);
+     findURLbyShortHash(shortHash);
 
-     function findURLbyShortHash(shortHash,longURL){
-      db.collection('shortener_map').find(  {  shortHash: +shortHash  }).toArray(function(err,items){
+     function findURLbyShortHash(shortHash){
+      db.collection('shortener_map').find(  {  shortHash: shortHash  }).toArray(function(err,items){
          if (err) throw err;
          if(items.length != 0){
-             longURL = items[0].urlRequest;
+             var longURL = items[0].urlRequest;
              res.redirect(longURL);
          } else {
            res.render("wrong.ejs", {shortHash: shortHash });
@@ -38,27 +44,53 @@ MongoClient.connect(mongoUrl, (err, db) => {
 
 }
   });
-   
-  app.get('/new/:site*', function(req, res){
+  
+   app.get('/new/:site*', function(req, res){
     var fullUrlRequested = req.params.site + req.params[0];
     var valid = checkUrlValid(fullUrlRequested);
-     function processShortHash(shortHash){
-              var rootURL = req.protocol + '://' + req.get('host');
-              var shortURL = rootURL + "/" + shortHash;
-              var data = { "originalUrl": fullUrlRequested, "shortened url": shortURL };
-              res.send(JSON.stringify(data, null, 2));
-       }
-     if(valid){
-       console.log(fullUrlRequested + " is a valid site");
-       var shortURL =  checkIfURLinDB(fullUrlRequested, processShortHash);
-     } else {
+    if(valid){
+           console.log(fullUrlRequested + " is a valid site");
+           async.waterfall([
+            function(callback){
+                var status = "";
+                db.collection('shortener_map').find(  {urlRequest: fullUrlRequested } ).toArray(function(err,items){
+                  if (err) throw err;
+                  //url is not in the database
+                   if(items.length == 0){
+                     status = "add";
+                     callback(null,status);
+                     //url in DB but need to add a short hash
+                   } else if(items[0].urlRequest == fullUrlRequested && items[0].shortHash == null) {
+                       status = "update";
+                       callback(null,status);
+                       //both url & short hash are in DB
+                   }  else {
+                        status = "in DB already";
+                        callback(null,status);
+                   }
+                });
+            },
+            function(status, callback){
+                if(status == "add"){
+                    getShortHash(status, fullUrlRequested);
+                } else if (status == "update"){
+                    getShortHash(status, fullUrlRequested);
+                } else {
+                    var shortHash = findShortHashbyURL(fullUrlRequested, renderShortenedURL);
+                 }
+                callback(null, 'done');
+                }
+            ], function (err, status) {
+               if(err){
+                    console.log(err);
+                } 
+            });
+        } else {
        var data = { "error":"Wrong url format. Please check your url again." };
-        //immediately send response
-        res.send(JSON.stringify(data, null, 2));
-     }
-   
-  });
-
+            //immediately send response
+            res.send(JSON.stringify(data, null, 2));
+        }
+     
 function checkUrlValid(url){
       var fullUrlRequested = url;
       var validUrlTest = /https?:\/\/(www\.)?[\w\/\-\.\%\:\+\~\#\=\?]+/;
@@ -66,69 +98,98 @@ function checkUrlValid(url){
       return validSite;
   }
   
-function checkIfURLinDB(requested, callback){
-      //check to see if we already have a record for that request
-      //AND check to see if there is a shortened url
-        var shortHash = 321;//getRandomInt(1,1000);
-         db.collection('shortener_map').find(  { $or: [ {urlRequest: requested }, {shortHash: shortHash} ] }).toArray(function(err,items){
-          if (err) throw err;
-           if(items.length == 0){
-             console.log("not in DB. adding");
-             addURLtoDB(requested, shortHash);
-             callback(shortHash);
-           } else if(items[0].urlRequest != null && items[0].shortHash == null) {
-                updateURLShortHashinDB(requested,shortHash);
-                //we're setting the shorthash to the valued passed, so we don't need to change it
-                //before running the callback
-                callback(shortHash);
-           } else if(items[0].urlRequest != requested && items[0].shortHash != null) {
-             console.log("just a test for now. Short hash is in db and it's");
-             console.log(items[0].shortHash);
-             shortHash = 5;
-             console.log("reset short hash for callback check. Now: " + shortHash);
-             callback(shortHash);
-             //may need another callback here. this part doesn't work so far;
-              /*var non_unique_hash = true
-             while(non_unique_hash == true){
-               var shortHash = getRandomInt(1,1000);
-                   db.collection('shortener_map').find(  { shortHash: shortHash }).toArray(function(err,items){
+      function renderShortenedURL(shortHash){
+            var rootURL = req.protocol + '://' + req.get('host');
+            var shortURL = rootURL + "/" + shortHash;
+            var data = { "originalUrl": fullUrlRequested, "shortened url": shortURL };
+            res.send(JSON.stringify(data, null, 2));
+      }
+      
+ function getShortHash(status, urlRequest){
+      async.waterfall([
+
+         //start building from check if url in db
+        function(callback){
+          var randInt = Math.floor(Math.random() * (1000 - 1)) + 1;
+            callback(null, randInt, status, urlRequest);
+        },
+        function(num, status,urlRequest,callback){
+            var base62Values = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var result = "";
+            
+             while(num > 0) {
+               var r = num % 62;  
+               result+=base62Values[r];
+               num = (num/62).floor;
+            // arg1 now equals randInt
+            callback(null, result,status,urlRequest);
+             }
+        },
+        function(shortHash,status,urlRequest, callback){
+          var exists = true;
+             db.collection('shortener_map').find(  {shortHash: +shortHash } ).toArray(function(err,items){
                      if (err) throw err;
-                     if(items == null){
-                       addURLtoDB(requested, shortHash);
-                       non_unique_hash = false;
-                       console.log("we made it to false, so we're calling the callback");
-                                    callback(shortHash);
+                     if(items.length == 0){
+                       exists = false;
+                          callback(null, shortHash,urlRequest, status,exists);
+                     } else {
+                         console.log(items);
+                         callback(null, shortHash,urlRequest, status,exists);
                      }
-                   });
-             }*/
-           }  else {
-        //     this record is already in DB so no action needed
-            callback(shortHash);
-           }
-         });
-         
-}
+                 });
+        },  function(shortHash,requested,status,exists, callback){
+                if(exists == false && status == "add") {
+                    addURLtoDB(requested,shortHash);
+                    renderShortenedURL(shortHash);
+                } else if(exists == false && status == "update"){
+                    updateURLShortHashinDB(requested,shortHash);
+                    renderShortenedURL(shortHash);
+                } else {
+                    console.log("Try again. The generated short hash, " + shortHash + " is already in the system");
+                }
+                callback(null,"done");
+        }
+    ], function (err, result) {
+       if(err){
+            console.log(err);
+        }   
+    });
+ }   
+        function renderShortenedURL(shortHash){
+              var rootURL = req.protocol + '://' + req.get('host');
+              var shortURL = rootURL + "/" + shortHash;
+              var data = { "originalUrl": fullUrlRequested, "shortened url": shortURL };
+             
+              res.send(JSON.stringify(data, null, 2));
+        }
 
- function addURLtoDB(requested, shortHash){
 
-     db.collection('shortener_map').insert(
-       { urlRequest: requested, shortHash: shortHash }, function(err,result){
-         if (err) throw err;
-         console.log("saved to database");
-       });
-}
+        function findShortHashbyURL(url, renderHashCallback){
+            db.collection('shortener_map').find(  {  urlRequest: url  }).toArray(function(err,items){
+               if (err) throw err;
+                 if(items.length != 0){
+                  var shortHash = items[0].shortHash;
+                  renderHashCallback(shortHash);
+                }   
+            });
+        }   
+    
+        function addURLtoDB(requested, shortHash){
+            db.collection('shortener_map').insert({ urlRequest: requested, shortHash: shortHash }, function(err,result){
+                 if (err) throw err;
+                 console.log("saved the following record to the database:")
+                 console.log(result.ops[0]);
+            });
+        }
 
- function updateURLShortHashinDB(requested,shortHash){
-     db.collection('shortener_map').update ({ urlRequest: requested },{ $set: { shortHash: shortHash } }, function(err,record){
-       if (err) throw err;
-       console.log("shortened hash for " + requested + "updated to " + shortHash);
-   });
-}
-  
-  
+        function updateURLShortHashinDB(requested,shortHash){
+            db.collection('shortener_map').update ({ urlRequest: requested },{ $set: { shortHash: shortHash } }, function(err,record){
+               if (err) throw err;
+                console.log("updated the following record in the database:")
+                console.log(record);
+            });
+        }
+
+}); // end of get request
 }); //end of connection
 
-function getRandomInt(min,max){
-  return Math.random() * (max - min) + min;
-
-}
