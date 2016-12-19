@@ -11,13 +11,13 @@ var mongoUrl = "mongodb://llmaddox:herokumary4git@ds133328.mlab.com:33328/shorte
 MongoClient.connect(mongoUrl, (err, db) => {
   if (err) throw err;
   var db = db;
-   // set the port of our application
-  // process.env.PORT lets the port be set by Heroku
-  //only listen when db is open
-  var port = process.env.PORT || 8080;
   
-  app.listen(port, function () {
-    console.log('listening on' + port);
+  //only listen when db is open
+   // set the port of our application
+// process.env.PORT lets the port be set by Heroku
+  
+  app.listen(process.env.PORT || 8080, function () {
+     console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);;
   });
   
    app.get('', function(req,res){
