@@ -1,0 +1,35 @@
+h2 {
+    margin-left: 100px;
+}
+
+.term {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.help {
+    font-size: 18px;
+    margin-left: 150px;
+    margin-bottom: 30px;
+}
+
+.help-box {
+    border: 1px solid black;
+    padding: 5px; 
+}
+
+.help-basic {
+    margin-left: 80px;
+    margin-bottom: 25px;
+}
+.indent {
+    margin-left: 100px;
+}
+
+.emphasize {
+    font-style: italic;
+}
+
+.help-text {
+    margin-left: 100px;
+}

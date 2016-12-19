@@ -3,6 +3,8 @@ var app = express();
 const bodyParser= require('body-parser');
 var async = require("async");
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.static(__dirname + '/public'));
+
 const MongoClient = require('mongodb').MongoClient;
 
 var mongoUrl = "mongodb://llmaddox:herokumary4git@ds133328.mlab.com:33328/shorten-your-url"
@@ -19,17 +21,19 @@ MongoClient.connect(mongoUrl, (err, db) => {
   });
   
    app.get('', function(req,res){
-     res.render('index.ejs');
+       var rootURL = req.protocol + '://' + req.get('host');
+       res.render('index.ejs',{root: rootURL});
 });
  
  app.get('/', function(req,res){
-     res.render('index.ejs');
+     var rootURL = req.protocol + '://' + req.get('host');
+     res.render('index.ejs',{root: rootURL});
 });
 
   app.get('/:shortened', function(req,res){
+     var rootURL = req.protocol + '://' + req.get('host');
      var shortHash = req.params.shortened;
-     console.log("short hash is " + shortHash);
-     findURLbyShortHash(shortHash);
+     findURLbyShortHash(shortHash, rootURL);
 
      function findURLbyShortHash(shortHash){
       db.collection('shortener_map').find(  {  shortHash: shortHash  }).toArray(function(err,items){
@@ -38,7 +42,8 @@ MongoClient.connect(mongoUrl, (err, db) => {
              var longURL = items[0].urlRequest;
              res.redirect(longURL);
          } else {
-           res.render("wrong.ejs", {shortHash: shortHash });
+             console.log(rootURL);
+           res.render("wrong.ejs", { root: rootURL, shortHash: shortHash });
          }
    });
 
@@ -120,7 +125,7 @@ function checkUrlValid(url){
         },
         function(shortHash,status,urlRequest, callback){
           var exists = true;
-             db.collection('shortener_map').find(  {shortHash: +shortHash } ).toArray(function(err,items){
+             db.collection('shortener_map').find(  {shortHash: shortHash } ).toArray(function(err,items){
                      if (err) throw err;
                      if(items.length == 0){
                        exists = false;
@@ -170,7 +175,11 @@ function checkUrlValid(url){
         }   
     
         function addURLtoDB(requested, shortHash){
-            db.collection('shortener_map').insert({ urlRequest: requested, shortHash: shortHash }, function(err,result){
+         //convert numbers to strings for DB consistency
+         if(typeof shortHash !== 'string'){
+             shortHash = shortHash.toString();
+         }
+         db.collection('shortener_map').insert({ urlRequest: requested, shortHash: shortHash }, function(err,result){
                  if (err) throw err;
                  console.log("saved the following record to the database:")
                  console.log(result.ops[0]);
@@ -178,6 +187,10 @@ function checkUrlValid(url){
         }
 
         function updateURLShortHashinDB(requested,shortHash){
+            //convert numbers to strings for DB consistency
+             if(typeof shortHash !== 'string'){
+                 shortHash = shortHash.toString();
+             }
             db.collection('shortener_map').update ({ urlRequest: requested },{ $set: { shortHash: shortHash } }, function(err,record){
                if (err) throw err;
                 console.log("updated the following record in the database:")

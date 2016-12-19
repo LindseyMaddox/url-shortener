@@ -5,9 +5,12 @@
   <title>MY APP</title>
 </head>
 <body>
- <h3>Url Shortener</h3>
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
+ <h2>URL Shortener</h2>
  </br>
  <div>
-     <p>url: <a href="<%= longURL%>"><%= shortURL %></a>
+     <p class="indent"><span class="term">shortened url: </span><a href="<%= longURL%>"><%= shortURL %></a>
+     <p class="indent"><span class="term">original url: </span><%= longURL %></p>
 </div>
+</body>
 

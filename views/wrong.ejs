@@ -5,9 +5,18 @@
   <title>MY APP</title>
 </head>
 <body>
- <h3>Url Shortener</h3>
+<link href="/css/style.css" rel="stylesheet" type="text/css">
+ <h2>URL Shortener</h2>
  </br>
  <div>
-     <p>Sorry, <%= shortHash %> is not a valid shortened url. Please try again.</p>
-     <p>Example: https://shorten-your-url.herokuapp.com/new/https://google.com</p>
+     <p class="indent">Sorry, we do not have a url in our database with a short hash of <span class="emphasize"><%= shortHash %></span>. Please enter your link again.</p>
 </div>
+</br>
+<div class="help-text">
+    <p class="help"><span class="help-box">Need help?</span></p>
+    <p class="help-basic">add <span class="emphasize">new/your_site</span> to the end of our site</p>
+    <p><span class="term">Example:</span> <%= root %>/<span class="emphasize">new/https://google.com</span></p>
+    <p><span class="term">Sample result: </span><%= root %>/456</span></p>
+</div>
+</div>
+</body>
