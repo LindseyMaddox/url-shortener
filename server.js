@@ -98,13 +98,6 @@ function checkUrlValid(url){
       return validSite;
   }
   
-      function renderShortenedURL(shortHash){
-            var rootURL = req.protocol + '://' + req.get('host');
-            var shortURL = rootURL + "/" + shortHash;
-            var data = { "originalUrl": fullUrlRequested, "shortened url": shortURL };
-            res.send(JSON.stringify(data, null, 2));
-      }
-      
  function getShortHash(status, urlRequest){
       async.waterfall([
 
@@ -160,7 +153,9 @@ function checkUrlValid(url){
               var shortURL = rootURL + "/" + shortHash;
               var data = { "originalUrl": fullUrlRequested, "shortened url": shortURL };
              
-              res.send(JSON.stringify(data, null, 2));
+              //res.send(JSON.stringify(data, null, 2));
+              res.render('lookup.ejs', {longURL: fullUrlRequested, shortURL: shortURL});
+    
         }
 
 
