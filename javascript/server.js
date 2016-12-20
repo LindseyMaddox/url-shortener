@@ -3,7 +3,7 @@ var app = express();
 const bodyParser= require('body-parser');
 var async = require("async");
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(express.static(__dirname + '/public'));
+app.use("/public",express.static(__dirname + '/public'));
 
 const MongoClient = require('mongodb').MongoClient;
 
