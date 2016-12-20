@@ -156,9 +156,12 @@ function checkUrlValid(url){
         function renderShortenedURL(shortHash){
               var rootURL = req.protocol + '://' + req.get('host');
               var shortURL = rootURL + "/" + shortHash;
-              var data = { "originalUrl": fullUrlRequested, "shortened url": shortURL };
-
-              res.render('lookup.ejs', {longURL: fullUrlRequested, shortURL: shortURL});
+              
+              var data = { "originalUrl": fullUrlRequested, "shortURL": shortURL };
+              //this out put is required by fcc 
+                res.send(JSON.stringify(data, null, 2));
+             //preferred modification
+             // res.render('lookup.ejs', {longURL: fullUrlRequested, shortURL: shortURL});
     
         }
 
