@@ -15,7 +15,8 @@ h2 {
 
 .help-box {
     border: 1px solid black;
-    padding: 5px; 
+    padding: 5px;
+    background-color: #f0f0f5;
 }
 
 .help-basic {

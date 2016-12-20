@@ -3,8 +3,9 @@ var app = express();
 const bodyParser= require('body-parser');
 var async = require("async");
 app.use(bodyParser.urlencoded({extended: true}));
-app.use("/public/css",express.static(__dirname + '/public'));
-
+app.set('view engine', 'ejs');
+//app.use(express.static('public'));
+app.use('/static', express.static('public'));
 const MongoClient = require('mongodb').MongoClient;
 
 var mongoUrl = "mongodb://llmaddox:herokumary4git@ds133328.mlab.com:33328/shorten-your-url"
