@@ -1,14 +1,16 @@
+require('dotenv').config();
 var express = require('express');
 var app = express();
 const bodyParser= require('body-parser');
 var async = require("async");
-app.use(bodyParser.urlencoded({extended: true}));
-app.set('view engine', 'ejs');
-//app.use(express.static('public'));
-app.use('/static', express.static('public'));
-const MongoClient = require('mongodb').MongoClient;
 
-var mongoUrl = "mongodb://llmaddox:herokumary4git@ds133328.mlab.com:33328/shorten-your-url"
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.static(__dirname + '/public'));
+app.set('view engine', 'ejs');
+
+const MongoClient = require('mongodb').MongoClient;
+var mongo_login = process.env.MONGO_LAB_LOGIN;
+var mongoUrl = "mongodb://" + mongo_login + "@ds133328.mlab.com:33328/shorten-your-url"
 MongoClient.connect(mongoUrl, (err, db) => {
   if (err) throw err;
   var db = db;
@@ -43,7 +45,6 @@ MongoClient.connect(mongoUrl, (err, db) => {
              var longURL = items[0].urlRequest;
              res.redirect(longURL);
          } else {
-             console.log(rootURL);
            res.render("wrong.ejs", { root: rootURL, shortHash: shortHash });
          }
    });
