@@ -1,4 +1,4 @@
-require('dotenv').config();
+
 var express = require('express');
 var app = express();
 const bodyParser= require('body-parser');
@@ -10,6 +10,10 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set('view engine', 'ejs');
 
+//for dev only
+if(app.settings.env == "development"){
+   require('dotenv').config(); 
+}
 const MongoClient = require('mongodb').MongoClient;
 var mongo_login = process.env.MONGO_LAB_LOGIN;
 var mongoUrl = "mongodb://" + mongo_login + "@ds133328.mlab.com:33328/shorten-your-url"
