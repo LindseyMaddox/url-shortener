@@ -151,7 +151,8 @@ function checkUrlValid(url){
                     updateURLShortHashinDB(requested,shortHash);
                     renderShortenedURL(shortHash);
                 } else {
-                    console.log("Try again. The generated short hash, " + shortHash + " is already in the system");
+                    res.render('exists.ejs');
+                    console.log("Rendering exists page. The generated short hash, " + shortHash + " is already in the system");
                 }
                 callback(null,"done");
         }
@@ -170,7 +171,6 @@ function checkUrlValid(url){
                 res.send(JSON.stringify(data, null, 2));
              //preferred modification
              // res.render('lookup.ejs', {longURL: fullUrlRequested, shortURL: shortURL});
-    
         }
 
 
